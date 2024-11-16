@@ -7,6 +7,7 @@ from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 #-----------------------|----------------------------------------------------------------
 
 load_dotenv()
@@ -86,9 +87,13 @@ class Producto_Compra(db.Model):
     Compraid = db.Column(db.String(255), db.ForeignKey('compra.id'), primary_key=True)
 
 #User_Compra
-class User_Compra(db.Model):
-    Userid = db.Column(db.String(255), db.ForeignKey('user.id'), primary_key=True)
-    Compraid = db.Column(db.String(255), db.ForeignKey('compra.id'), primary_key=True)
+class users_compra(db.Model):
+    __tablename__ = 'users_compra'  # Especifica explícitamente el nombre de la tabla
+
+    Userid = db.Column(db.String(255), db.ForeignKey('users.id'), primary_key=True)  # Asegúrate de que 'users.id' sea correcto
+    Compraid = db.Column(db.String(255), db.ForeignKey('compra.id'), primary_key=True)  # Asegúrate de que 'compra.id' sea correcto
+    usuario = db.relationship('Users', backref=db.backref('compras', lazy=True))
+    compra = db.relationship('Compra', backref=db.backref('usuarios', lazy=True))
 
 # Esquema User
 class UserSchema(ma.SQLAlchemySchema):
@@ -233,6 +238,61 @@ def test_connection():
         return jsonify({"message": "Conexión exitosa", "result": result_list})
     except Exception as e:
         return jsonify({"message": str(e), "status": "error"})
+#-------------------------------------------------------------
+@app.route('/historial_compras/<username>', methods=['GET'])
+def historial_compras(username):
+    try:
+        # Ejecutar la consulta SQL para obtener el historial de compras del usuario
+        result = db.session.execute(
+            text("""
+                SELECT c.id AS compra_id, 
+                       c.fecha_compra, 
+                       c.total_compra, 
+                       c.presup_compra
+                FROM compra c
+                JOIN users_compra uc ON c.id = uc.compraid
+                JOIN users u ON u.id = uc.userid
+                WHERE u.username = :username;
+            """),
+            {"username": username}  # Pasar el username como parámetro
+        ).fetchall()
+
+        # Verificar si hay resultados
+        if not result:
+            return jsonify({"message": "No se encontraron compras para este usuario", "status": "error"}), 404
+
+        # Convertir el resultado en una lista de diccionarios
+        result_list = []
+        for row in result:
+            compra_id = row[0]
+            fecha_compra = row[1]
+            total_compra = row[2]
+            presup_compra = row[3]
+            
+            # Verificar si fecha_compra es un objeto datetime y convertirla a string
+            if isinstance(fecha_compra, datetime):
+                fecha_compra_str = fecha_compra.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                # Si no es un datetime (en caso de que sea timedelta o nulo), lo manejamos de forma segura
+                fecha_compra_str = str(fecha_compra)
+
+            result_list.append({
+                "compra_id": compra_id,
+                "fecha_compra": fecha_compra_str,
+                "total_compra": total_compra,
+                "presup_compra": presup_compra
+            })
+
+        # Devolver el historial de compras como respuesta JSON
+        return jsonify({
+            "message": "Historial de compras obtenido con éxito",
+            "status": "success",
+            "compras": result_list
+        })
+
+    except Exception as e:
+        return jsonify({"message": str(e), "status": "error"}), 500
+
 
 
 

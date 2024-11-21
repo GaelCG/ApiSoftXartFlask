@@ -56,6 +56,7 @@ class Producto(db.Model):
     tipUnit = db.Column(db.Integer)
     enlace_nube = db.Column(db.String(255))
     enlace_imagen = db.Column(db.String(255))
+    precio = db.Column(db.Float(precision=2))
 
 # Modelo Tienda
 class Tienda(db.Model):
@@ -132,6 +133,7 @@ class ProductoSchema(ma.SQLAlchemySchema):
     tipUnit = ma.auto_field()
     enlace_nube = ma.auto_field()
     enlace_imagen = ma.auto_field()
+    precio = ma.auto_field()
 
 # Esquema Tienda
 class TiendaSchema(ma.SQLAlchemySchema):

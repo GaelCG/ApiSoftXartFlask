@@ -84,6 +84,7 @@ class Producto_Tienda(db.Model):
     precio = db.Column(db.Float(precision=2))
 # Producto_Compra
 class Producto_Compra(db.Model):
+    __tablename__ = 'producto_compra'  # Especifica explícitamente el nombre de la tabla
     Productoid = db.Column(db.String(255), db.ForeignKey('producto.id'), primary_key=True)
     Compraid = db.Column(db.String(255), db.ForeignKey('compra.id'), primary_key=True)
 
@@ -296,7 +297,71 @@ def historial_compras(username):
         return jsonify({"message": str(e), "status": "error"}), 500
 
 
+@app.route('/confirmar_compra', methods=['POST'])
+def confirmar_compra():
+    try:
+        # Obtener los datos de la compra desde el JSON de la petición
+        data = request.get_json()
+        
+        # Validar la información requerida en la compra
+        username = data.get('username')
+        productos = data.get('productos')  # Se espera una lista de productos con id y cantidad
+        total_compra = data.get('total_compra')
+        presup_compra = data.get('presup_compra')
+        
+        if not username or not productos or not total_compra or not presup_compra:
+            return jsonify({"message": "Faltan datos requeridos", "status": "error"}), 400
+        
+        # Crear la compra
+        nueva_compra = Compra(
+            fecha_compra=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            total_compra=total_compra,
+            presup_compra=presup_compra
+        )
+        db.session.add(nueva_compra)
+        db.session.commit()
+        
+        # Asociar la compra con el usuario
+        usuario = Users.query.filter_by(username=username).first()
+        if not usuario:
+            return jsonify({"message": "Usuario no encontrado", "status": "error"}), 404
+        
+        nueva_compra_usuario = users_compra(
+            Userid=usuario.id,
+            Compraid=nueva_compra.id
+        )
+        db.session.add(nueva_compra_usuario)
+        
+        # Asociar los productos a la compra
+        for producto in productos:
+            producto_id = producto.get('id')
+            cantidad = producto.get('cantidad')
+            
+            producto_db = Producto.query.filter_by(id=producto_id).first()
+            if not producto_db:
+                return jsonify({"message": f"Producto con ID {producto_id} no encontrado", "status": "error"}), 404
+            
+            # Insertar relación Producto_Compra
+            nuevo_producto_compra = Producto_Compra(
+                Productoid=producto_db.id,
+                Compraid=nueva_compra.id
+            )
+            db.session.add(nuevo_producto_compra)
 
+        # Guardar los cambios en la base de datos
+        db.session.commit()
+
+        # Serializar la respuesta
+        result = CompraSchema().dump(nueva_compra)
+        
+        return jsonify({
+            "message": "Compra confirmada con éxito",
+            "status": "success",
+            "compra": result
+        }), 201
+
+    except Exception as e:
+        return jsonify({"message": str(e), "status": "error"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -277,7 +277,7 @@ def historial_compras(username):
             if isinstance(fecha_compra, timedelta):
                 fecha_base = datetime(1970,1,1)
                 fecha_real = fecha_base + fecha_compra
-                fecha_compra_str = fecha_real.strftime('%Y-%m-%d'), #Obtenemos solamente en año, mes, dia
+                fecha_compra_str = fecha_real.strftime('%Y-%m-%d') #Obtenemos solamente en año, mes, dia
             else:
                 # Si no es un datetime (en caso de que sea timedelta o nulo), lo manejamos de forma segura
                 fecha_compra_str = str(fecha_compra)

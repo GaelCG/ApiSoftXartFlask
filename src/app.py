@@ -41,7 +41,7 @@ class Users(db.Model):
 # Modelo Compra
 class Compra(db.Model):
     id = db.Column(db.String(255), primary_key=True, default=lambda: str(uuid.uuid4()))
-    fecha_compra = db.Column(db.Time)
+    fecha_compra = db.Column(db.DateTime, default=datetime.utcnow)
     total_compra = db.Column(db.Float(precision=2))
     presup_compra = db.Column(db.Float(precision=2))
 
@@ -274,12 +274,16 @@ def historial_compras(username):
             presup_compra = row[3]
             
             # Verificar si fecha_compra es un objeto datetime y convertirla a string
-            if isinstance(fecha_compra, timedelta):
-                fecha_base = datetime(1970,1,1)
+            if isinstance(fecha_compra, datetime):
+                # Si es datetime, formatear a 'YYYY-MM-DD'
+                fecha_compra_str = fecha_compra.strftime('%Y-%m-%d')
+            elif isinstance(fecha_compra, timedelta):
+                # Si es timedelta, convertirlo a fecha válida sumándolo a un punto de referencia
+                fecha_base = datetime(1970, 1, 1)  # Ajusta según tu caso
                 fecha_real = fecha_base + fecha_compra
-                fecha_compra_str = fecha_real.strftime('%Y-%m-%d') #Obtenemos solamente en año, mes, dia
+                fecha_compra_str = fecha_real.strftime('%Y-%m-%d')
             else:
-                # Si no es un datetime (en caso de que sea timedelta o nulo), lo manejamos de forma segura
+                # Si no es datetime ni timedelta, convertir a string directamente
                 fecha_compra_str = str(fecha_compra)
 
             result_list.append({
@@ -317,7 +321,7 @@ def confirmar_compra():
         
         # Crear la compra
         nueva_compra = Compra(
-            fecha_compra=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            fecha_compra=datetime.now(),
             total_compra=total_compra,
             presup_compra=presup_compra
         )

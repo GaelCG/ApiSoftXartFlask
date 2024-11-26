@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, text
 from flask_marshmallow import Marshmallow
 from flask import request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -273,11 +274,13 @@ def historial_compras(username):
             presup_compra = row[3]
             
             # Verificar si fecha_compra es un objeto datetime y convertirla a string
-            if isinstance(fecha_compra, datetime):
-                fecha_compra_str = fecha_compra.strftime('%Y-%m-%d'), #Obtenemos solamente en año, mes, dia
+            if isinstance(fecha_compra, timedelta):
+                fecha_base = datetime(1970,1,1)
+                fecha_real = fecha_base + fecha_compra
+                fecha_compra_str = fecha_real.strftime('%Y-%m-%d'), #Obtenemos solamente en año, mes, dia
             else:
                 # Si no es un datetime (en caso de que sea timedelta o nulo), lo manejamos de forma segura
-                fecha_compra_str = fecha_compra
+                fecha_compra_str = str(fecha_compra)
 
             result_list.append({
                 "compra_id": compra_id,

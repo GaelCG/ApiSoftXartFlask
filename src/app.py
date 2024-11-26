@@ -274,10 +274,10 @@ def historial_compras(username):
             
             # Verificar si fecha_compra es un objeto datetime y convertirla a string
             if isinstance(fecha_compra, datetime):
-                fecha_compra_str = fecha_compra.strftime('%Y-%M-%D'), #Obtenemos solamente en año, mes, dia
+                fecha_compra_str = fecha_compra.strftime('%Y-%m-%d'), #Obtenemos solamente en año, mes, dia
             else:
                 # Si no es un datetime (en caso de que sea timedelta o nulo), lo manejamos de forma segura
-                fecha_compra_str = "omgimatest"
+                fecha_compra_str = fecha_compra
 
             result_list.append({
                 "compra_id": compra_id,
